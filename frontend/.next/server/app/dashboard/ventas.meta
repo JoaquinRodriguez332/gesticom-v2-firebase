@@ -1,7 +1,16 @@
 {
   "headers": {
-    "x-nextjs-stale-time": "4294967294",
+    "x-nextjs-stale-time": "300",
     "x-nextjs-prerender": "1",
     "x-next-cache-tags": "_N_T_/layout,_N_T_/dashboard/layout,_N_T_/dashboard/ventas/layout,_N_T_/dashboard/ventas/page,_N_T_/dashboard/ventas"
-  }
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/dashboard/ventas/__PAGE__",
+    "/dashboard/ventas",
+    "/dashboard",
+    "/_index",
+    "/_head"
+  ]
 }

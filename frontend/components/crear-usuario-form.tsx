@@ -9,21 +9,24 @@ import { useToast } from "@/hooks/use-toast"
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { UserPlus, Save, X, Eye, EyeOff } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAuth } from "@/lib/auth-context"
+// Importamos API y clases
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import { adminAuth } from "@/lib/firebase"
+
+import { usuariosApi, ApiError } from "@/lib/api"
 
 interface Props {
   onUsuarioCreado: () => void
   onClose: () => void
 }
 
-// --- CAMBIO 1: Actualizamos los roles ---
 interface FormData {
   nombre: string
   rut: string
   email: string
   password: string
   confirmPassword: string
-  rol: "admin" | "vendedor" | ""; // Usamos los nuevos roles
+  rol: "admin" | "trabajador" | ""
 }
 
 const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
@@ -38,27 +41,18 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { token } = useAuth() // ¡Perfecto! Ya estás obteniendo el token.
   const { toast } = useToast()
 
   const handleChange = (field: keyof FormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Tu lógica de formatear RUT es genial, la dejamos.
   const formatRUT = (rut: string) => {
-    // Remover caracteres no numéricos excepto K
     const cleaned = rut.replace(/[^0-9kK]/g, "")
-
     if (cleaned.length <= 1) return cleaned
-
-    // Separar número y dígito verificador
     const number = cleaned.slice(0, -1)
     const dv = cleaned.slice(-1).toUpperCase()
-
-    // Formatear número con puntos
     const formattedNumber = number.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-
     return `${formattedNumber}-${dv}`
   }
 
@@ -67,7 +61,6 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
     handleChange("rut", formatted)
   }
 
-  // Tu validación de formulario está excelente.
   const validateForm = () => {
     const errors: string[] = []
 
@@ -87,12 +80,10 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
     if (form.rut && !rutRegex.test(form.rut)) {
       errors.push("El formato del RUT es inválido")
     }
-    
-    // --- CAMBIO 2: Ajustado a 6 (mínimo de Firebase) ---
-    if (form.password.length < 6) {
+
+    if (form.password.length < 6) { // Firebase pide min 6
       errors.push("La contraseña debe tener al menos 6 caracteres")
     }
-    // (Tu validación de letra y número la quitamos por ahora, Firebase la maneja)
 
     if (form.password !== form.confirmPassword) {
       errors.push("Las contraseñas no coinciden")
@@ -100,63 +91,83 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
 
     return errors
   }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const errors = validateForm()
-    if (errors.length > 0) {
-      toast({
-        title: "Errores de validación",
-        description: errors.join(", "),
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // ¡Tu 'fetch' ya está perfecto y usa el token!
-      // (Solo nos aseguramos de que la URL viene del .env.local)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          nombre: form.nombre.trim(),
-          rut: form.rut.trim(),
-          email: form.email.trim(),
-          password: form.password,
-          rol: form.rol,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        // Usamos 'mensaje' de la API de Firebase
-        throw new Error(errorData.mensaje || "Error al crear usuario")
-      }
-
-      toast({
-        title: "Usuario creado",
-        description: "El usuario se ha creado exitosamente",
-      })
-
-      onUsuarioCreado() // Esto recarga la lista en el componente padre
-    } catch (error) {
-      console.error("Error al crear usuario:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al crear usuario",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+  const errors = validateForm()
+  if (errors.length > 0) {
+    toast({
+      title: "Errores de validación",
+      description: errors.join(", "),
+      variant: "destructive",
+    })
+    return
   }
+
+  setIsLoading(true)
+
+  try {
+    console.log("===== INICIANDO CREACIÓN DE USUARIO =====")
+
+    const email = form.email.trim()
+    const password = form.password
+    const nombre = form.nombre.trim()
+    const rutFormateado = formatRUT(form.rut.trim())
+    const rol = form.rol
+
+    // 1️⃣ Crear usuario en Firebase Auth (NO toca la sesión actual)
+    console.log("1) Creando usuario en Firebase Auth...")
+    const cred = await createUserWithEmailAndPassword(adminAuth, email, password)
+    const uid = cred.user.uid
+    console.log("✅ Auth user creado:", uid)
+
+    // 2️⃣ Guardar perfil en Firestore con ese UID
+    console.log("2) Guardando perfil en Firestore...")
+    await usuariosApi.create({
+      uid,
+      nombre,
+      rut: rutFormateado,
+      email,
+      rol,
+    })
+
+    toast({
+      title: "Usuario creado",
+      description: "El usuario se ha guardado en la base de datos y ya puede iniciar sesión.",
+    })
+
+    setForm({
+      nombre: "",
+      rut: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      rol: "",
+    })
+
+    onUsuarioCreado()
+    onClose()
+  } catch (error: any) {
+    console.error("❌ Error al crear usuario:", error)
+
+    let message = "Error al crear usuario"
+    if (error?.code === "auth/email-already-in-use") {
+      message = "Ya existe una cuenta con este correo"
+    } else if (error?.code === "auth/invalid-email") {
+      message = "El correo electrónico no es válido"
+    } else if (error?.code === "auth/weak-password") {
+      message = "La contraseña es demasiado débil"
+    }
+
+    toast({
+      title: "Error",
+      description: message,
+      variant: "destructive",
+    })
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   return (
     <div className="space-y-6">
@@ -168,6 +179,9 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* ... (El resto del formulario visual sigue igual, solo cambia la lógica de arriba) ... */}
+        {/* Te lo dejo resumido, los inputs son los mismos que tenías */}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="nombre">Nombre Completo</Label>
@@ -205,13 +219,12 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
 
         <div className="space-y-2">
           <Label htmlFor="rol">Rol</Label>
-          <Select value={form.rol} onValueChange={(value) => handleChange("rol", value as any)}>
+          <Select value={form.rol} onValueChange={(value) => handleChange("rol", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar rol" />
             </SelectTrigger>
             <SelectContent>
-              {/* --- CAMBIO 3: Actualizamos los roles --- */}
-              <SelectItem value="vendedor">Vendedor</SelectItem>
+              <SelectItem value="trabajador">Trabajador</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>

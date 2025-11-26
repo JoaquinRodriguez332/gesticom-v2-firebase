@@ -1,11 +1,11 @@
 {
   "version": 4,
   "routes": {
-    "/": {
+    "/_global-error": {
       "experimentalBypassFor": [
         {
           "type": "header",
-          "key": "Next-Action"
+          "key": "next-action"
         },
         {
           "type": "header",
@@ -14,8 +14,9 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/",
-      "dataRoute": "/index.rsc",
+      "srcRoute": "/_global-error",
+      "dataRoute": "/_global-error.rsc",
+      "prefetchDataRoute": null,
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -25,11 +26,12 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/dashboard": {
+    "/_not-found": {
+      "initialStatus": 404,
       "experimentalBypassFor": [
         {
           "type": "header",
-          "key": "Next-Action"
+          "key": "next-action"
         },
         {
           "type": "header",
@@ -38,56 +40,9 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/dashboard",
-      "dataRoute": "/dashboard.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/dashboard/usuarios": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "Next-Action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/dashboard/usuarios",
-      "dataRoute": "/dashboard/usuarios.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/dashboard/ventas": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "Next-Action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/dashboard/ventas",
-      "dataRoute": "/dashboard/ventas.rsc",
+      "srcRoute": "/_not-found",
+      "dataRoute": "/_not-found.rsc",
+      "prefetchDataRoute": null,
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -101,7 +56,7 @@
       "experimentalBypassFor": [
         {
           "type": "header",
-          "key": "Next-Action"
+          "key": "next-action"
         },
         {
           "type": "header",
@@ -112,6 +67,82 @@
       "initialRevalidateSeconds": false,
       "srcRoute": "/dashboard/inventario",
       "dataRoute": "/dashboard/inventario.rsc",
+      "prefetchDataRoute": null,
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/dashboard": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/dashboard",
+      "dataRoute": "/dashboard.rsc",
+      "prefetchDataRoute": null,
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/dashboard/usuarios": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/dashboard/usuarios",
+      "dataRoute": "/dashboard/usuarios.rsc",
+      "prefetchDataRoute": null,
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/dashboard/ventas": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/dashboard/ventas",
+      "dataRoute": "/dashboard/ventas.rsc",
+      "prefetchDataRoute": null,
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -125,7 +156,7 @@
       "experimentalBypassFor": [
         {
           "type": "header",
-          "key": "Next-Action"
+          "key": "next-action"
         },
         {
           "type": "header",
@@ -136,6 +167,32 @@
       "initialRevalidateSeconds": false,
       "srcRoute": "/login",
       "dataRoute": "/login.rsc",
+      "prefetchDataRoute": null,
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/",
+      "dataRoute": "/index.rsc",
+      "prefetchDataRoute": null,
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -149,8 +206,8 @@
   "dynamicRoutes": {},
   "notFoundRoutes": [],
   "preview": {
-    "previewModeId": "1856c2de6ec5858758c3690d85d8bab6",
-    "previewModeSigningKey": "242842b4941b7fbecfdeed724c5751bc3385a32e88e9e02ec4b97127f58cfea8",
-    "previewModeEncryptionKey": "2e60aa86af75f90056e36ad150ddf79696e4a3fe013f37e674445794ff0cf93e"
+    "previewModeId": "824597633edb5584ead5e15fe87af2d2",
+    "previewModeSigningKey": "1129ddbf2a196cefb3c565a34c64c3ffa06efa9870a0b0b7d33e30fe61710211",
+    "previewModeEncryptionKey": "69ccb29d65a4db0d1f6e7cd4c62c2017b8e3d9a9d34abf1db15b5c2b5609f5db"
   }
 }

@@ -1,9 +1,10 @@
 {
+  "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
-  "/dashboard/usuarios/page": "/dashboard/usuarios",
   "/dashboard/inventario/page": "/dashboard/inventario",
-  "/dashboard/ventas/page": "/dashboard/ventas",
-  "/page": "/",
   "/dashboard/page": "/dashboard",
-  "/login/page": "/login"
+  "/dashboard/usuarios/page": "/dashboard/usuarios",
+  "/dashboard/ventas/page": "/dashboard/ventas",
+  "/login/page": "/login",
+  "/page": "/"
 }
