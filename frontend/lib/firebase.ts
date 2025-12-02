@@ -4,12 +4,12 @@ import { getAuth } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
 
 const firebaseConfig = {
-  apiKey: "your api key",
-  authDomain: "your auth domain",
-  projectId: "your project id",
-  storageBucket: "your storage bucket",
-  messagingSenderId: "your messaging sender id",
-  appId: "yout app id",
+  apiKey: "AIzaSyDeO4RNogxdrDxOJEWfAbsyr67jh19fIFc",
+  authDomain: "gesticom-4e956.firebaseapp.com",
+  projectId: "gesticom-4e956",
+  storageBucket: "gesticom-4e956.firebasestorage.app",
+  messagingSenderId: "158166010651",
+  appId: "1:158166010651:web:58b14e98489ea9046a61be",
 }
 
 // App principal (sesión del usuario logueado)
