@@ -3,6 +3,8 @@
     "@playwright/test": "^1.57.0",
     "@types/jest": "^30.0.0",
     "jest": "^30.2.0"
+  },
+  "dependencies": {
+    "@emailjs/browser": "^4.4.1"
   }
-  
 }
