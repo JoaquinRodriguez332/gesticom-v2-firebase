@@ -9,11 +9,9 @@ import { useToast } from "@/hooks/use-toast"
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { UserPlus, Save, X, Eye, EyeOff } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// Importamos API y clases
 import { createUserWithEmailAndPassword } from "firebase/auth"
-import { adminAuth } from "@/lib/firebase"
-
-import { usuariosApi, ApiError } from "@/lib/api"
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"
+import { adminAuth, db } from "@/lib/firebase"
 
 interface Props {
   onUsuarioCreado: () => void
@@ -27,6 +25,34 @@ interface FormData {
   password: string
   confirmPassword: string
   rol: "admin" | "trabajador" | ""
+}
+
+// Función auxiliar para validar RUT (Módulo 11)
+const esRutValido = (rut: string): boolean => {
+  if (!rut) return false
+  
+  // 1. Limpiar (quitar puntos y guión)
+  const valor = rut.replace(/\./g, "").replace(/-/g, "").trim().toUpperCase()
+  
+  // 2. Validar largo mínimo y que sea numérico (salvo el DV)
+  if (valor.length < 8) return false
+  const cuerpo = valor.slice(0, -1)
+  const dv = valor.slice(-1)
+  if (!/^\d+$/.test(cuerpo)) return false
+
+  // 3. Calcular Dígito Verificador
+  let suma = 0
+  let multiplicador = 2
+
+  for (let i = cuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(cuerpo[i]) * multiplicador
+    multiplicador = multiplicador === 7 ? 2 : multiplicador + 1
+  }
+
+  const resto = 11 - (suma % 11)
+  const dvCalculado = resto === 11 ? "0" : resto === 10 ? "K" : resto.toString()
+
+  return dvCalculado === dv
 }
 
 const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
@@ -61,7 +87,7 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
     handleChange("rut", formatted)
   }
 
-  const validateForm = () => {
+ const validateForm = () => {
     const errors: string[] = []
 
     if (!form.nombre.trim()) errors.push("El nombre es requerido")
@@ -76,12 +102,12 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
       errors.push("El formato del email es inválido")
     }
 
-    const rutRegex = /^[0-9.]+-[0-9kK]$/
-    if (form.rut && !rutRegex.test(form.rut)) {
-      errors.push("El formato del RUT es inválido")
+    // 🔥 CAMBIO AQUÍ: Usamos la función matemática en vez del regex simple
+    if (form.rut && !esRutValido(form.rut)) {
+      errors.push("El RUT ingresado no es válido (Revisa el dígito verificador)")
     }
 
-    if (form.password.length < 6) { // Firebase pide min 6
+    if (form.password.length < 6) {
       errors.push("La contraseña debe tener al menos 6 caracteres")
     }
 
@@ -91,83 +117,91 @@ const CrearUsuarioForm: React.FC<Props> = ({ onUsuarioCreado, onClose }) => {
 
     return errors
   }
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
 
-  const errors = validateForm()
-  if (errors.length > 0) {
-    toast({
-      title: "Errores de validación",
-      description: errors.join(", "),
-      variant: "destructive",
-    })
-    return
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-  setIsLoading(true)
-
-  try {
-    console.log("===== INICIANDO CREACIÓN DE USUARIO =====")
-
-    const email = form.email.trim()
-    const password = form.password
-    const nombre = form.nombre.trim()
-    const rutFormateado = formatRUT(form.rut.trim())
-    const rol = form.rol
-
-    // 1️⃣ Crear usuario en Firebase Auth (NO toca la sesión actual)
-    console.log("1) Creando usuario en Firebase Auth...")
-    const cred = await createUserWithEmailAndPassword(adminAuth, email, password)
-    const uid = cred.user.uid
-    console.log("✅ Auth user creado:", uid)
-
-    // 2️⃣ Guardar perfil en Firestore con ese UID
-    console.log("2) Guardando perfil en Firestore...")
-    await usuariosApi.create({
-      uid,
-      nombre,
-      rut: rutFormateado,
-      email,
-      rol,
-    })
-
-    toast({
-      title: "Usuario creado",
-      description: "El usuario se ha guardado en la base de datos y ya puede iniciar sesión.",
-    })
-
-    setForm({
-      nombre: "",
-      rut: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      rol: "",
-    })
-
-    onUsuarioCreado()
-    onClose()
-  } catch (error: any) {
-    console.error("❌ Error al crear usuario:", error)
-
-    let message = "Error al crear usuario"
-    if (error?.code === "auth/email-already-in-use") {
-      message = "Ya existe una cuenta con este correo"
-    } else if (error?.code === "auth/invalid-email") {
-      message = "El correo electrónico no es válido"
-    } else if (error?.code === "auth/weak-password") {
-      message = "La contraseña es demasiado débil"
+    const errors = validateForm()
+    if (errors.length > 0) {
+      toast({
+        title: "Errores de validación",
+        description: errors.join(", "),
+        variant: "destructive",
+      })
+      return
     }
 
-    toast({
-      title: "Error",
-      description: message,
-      variant: "destructive",
-    })
-  } finally {
-    setIsLoading(false)
+    setIsLoading(true)
+
+    try {
+      console.log("===== INICIANDO CREACIÓN DE USUARIO =====")
+
+      const email = form.email.trim()
+      const password = form.password
+      const nombre = form.nombre.trim()
+      const rutFormateado = formatRUT(form.rut.trim())
+      const rol = form.rol
+
+      // 1️⃣ Crear usuario en Firebase Auth (NO toca la sesión actual)
+      console.log("1️⃣ Creando usuario en Firebase Auth...")
+      const cred = await createUserWithEmailAndPassword(adminAuth, email, password)
+      const uid = cred.user.uid
+      console.log("✅ Auth user creado con UID:", uid)
+
+      // 2️⃣ USAR setDoc en vez de addDoc para usar el UID como ID del documento
+      console.log("2️⃣ Guardando perfil en Firestore con UID:", uid)
+      const userDocRef = doc(db, "usuarios", uid) // ← Usar el UID como ID del documento
+      
+      await setDoc(userDocRef, {
+        nombre,
+        rut: rutFormateado,
+        email,
+        rol, // ← Este es el campo crítico
+        activo: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        creado_por_nombre: "Sistema"
+      })
+
+      console.log("✅ Perfil guardado correctamente en Firestore")
+
+      toast({
+        title: "✅ Usuario creado exitosamente",
+        description: `${nombre} (${rol}) puede iniciar sesión ahora.`,
+      })
+
+      setForm({
+        nombre: "",
+        rut: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        rol: "",
+      })
+
+      onUsuarioCreado()
+      onClose()
+    } catch (error: any) {
+      console.error("❌ Error al crear usuario:", error)
+
+      let message = "Error al crear usuario"
+      if (error?.code === "auth/email-already-in-use") {
+        message = "Ya existe una cuenta con este correo"
+      } else if (error?.code === "auth/invalid-email") {
+        message = "El correo electrónico no es válido"
+      } else if (error?.code === "auth/weak-password") {
+        message = "La contraseña es demasiado débil"
+      }
+
+      toast({
+        title: "❌ Error",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
-}
 
   return (
     <div className="space-y-6">
@@ -179,8 +213,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ... (El resto del formulario visual sigue igual, solo cambia la lógica de arriba) ... */}
-        {/* Te lo dejo resumido, los inputs son los mismos que tenías */}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -225,7 +257,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="trabajador">Trabajador</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="admin">Administrador</SelectItem>
             </SelectContent>
           </Select>
         </div>

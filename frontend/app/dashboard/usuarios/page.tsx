@@ -4,12 +4,12 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, ShieldAlert } from "lucide-react"
-import DashboardHeader from "@/components/dashboard-header" // ✅ Header unificado
+import { ArrowLeft, Users, ShieldAlert, Lock } from "lucide-react"
+import DashboardHeader from "@/components/dashboard-header"
 import UsuariosManagement from "@/components/usuarios-management"
 
 export default function UsuariosPage() {
-  const { isAuthenticated, isLoading, hasRole } = useAuth()
+  const { isAuthenticated, isLoading, isAdmin } = useAuth()
   const router = useRouter()
 
   // 1. Redirección si no está logueado
@@ -21,12 +21,13 @@ export default function UsuariosPage() {
 
   // 2. Redirección de seguridad (Solo Admins)
   useEffect(() => {
-    if (!isLoading && isAuthenticated && !hasRole("admin")) {
-      // Si un trabajador intenta entrar por URL directa, lo mandamos al dashboard
+    if (!isLoading && isAuthenticated && !isAdmin) {
+      console.warn("🚫 Acceso denegado: Solo administradores")
       router.push("/dashboard")
     }
-  }, [isAuthenticated, isLoading, hasRole, router])
+  }, [isAuthenticated, isLoading, isAdmin, router])
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -36,13 +37,23 @@ export default function UsuariosPage() {
   }
 
   // Protección extra de renderizado
-  if (!isAuthenticated || !hasRole("admin")) {
-    return null
+  if (!isAuthenticated || !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-4">
+          <Lock className="h-16 w-16 mx-auto text-red-500" />
+          <h2 className="text-2xl font-bold text-gray-900">Acceso Restringido</h2>
+          <p className="text-gray-600">Solo administradores pueden acceder a esta sección</p>
+          <Button onClick={() => router.push("/dashboard")}>
+            Volver al Dashboard
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Global */}
       <DashboardHeader />
 
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
@@ -71,7 +82,7 @@ export default function UsuariosPage() {
           </div>
         </div>
 
-        {/* Componente Principal de Gestión (Tabla, Modales, etc.) */}
+        {/* Componente Principal de Gestión */}
         <UsuariosManagement />
         
       </main>

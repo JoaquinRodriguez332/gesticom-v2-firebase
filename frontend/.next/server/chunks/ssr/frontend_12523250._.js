@@ -1,0 +1,3 @@
+module.exports=[38507,a=>{"use strict";a.i(26422),a.s([])},54502,a=>{"use strict";var b=a.i(57850),c=a.i(45056),d=a.i(93609);a.i(38507);var e=a.i(26422);function f(){let{isAuthenticated:a,isLoading:f,usuario:g}=(0,e.useAuth)(),h=(0,d.useRouter)();return(0,c.useEffect)(()=>{f||(a?g?.rol==="admin"?h.push("/dashboard"):h.push("/inventario"):h.push("/login"))},[a,f,h,g]),(0,b.jsx)("div",{className:"min-h-screen flex items-center justify-center",children:(0,b.jsx)("div",{className:"animate-spin rounded-full h-12 w-12 border-b-2 border-primary"})})}a.s(["default",()=>f])}];
+
+//# sourceMappingURL=frontend_12523250._.js.map

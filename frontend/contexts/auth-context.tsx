@@ -28,6 +28,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   hasRole: (role: string) => boolean
+  isAdmin: boolean
+  isTrabajador: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -38,45 +40,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  // Función para obtener el perfil del usuario desde Firestore
-  // Función para obtener el perfil del usuario desde Firestore
-const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<Usuario | null> => {
-  try {
-    const userDocRef = doc(db, "usuarios", firebaseUser.uid)   // deja esto como está por ahora
-    const userDoc = await getDoc(userDocRef)
+  // 🔥 FUNCIÓN MEJORADA - Lee el rol REAL de Firestore
+  const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<Usuario | null> => {
+    try {
+      const userDocRef = doc(db, "usuarios", firebaseUser.uid)
+      const userDoc = await getDoc(userDocRef)
 
-    if (userDoc.exists()) {
-      const userData = userDoc.data()
-      console.log("🔥 Perfil Firestore leído:", userData)
+      if (userDoc.exists()) {
+        const userData = userDoc.data()
+        
+        // ✅ LEER EL ROL REAL - SIN FORZAR
+        const rolReal = userData.rol || "trabajador" // Por defecto trabajador si no existe
+        
+        console.log("📋 PERFIL CARGADO:", {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          nombre: userData.nombre,
+          rol: rolReal,
+          activo: userData.activo
+        })
 
-      return {
-        id: firebaseUser.uid,
-        email: firebaseUser.email || "",
-        nombre: userData.nombre || "Usuario",
-        // ⬇⬇⬇  FORZAR ADMIN PARA PRUEBAS  ⬇⬇⬇
-        rol: "admin",
-        // ⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆
-        rut: userData.rut,
-        activo: userData.activo ?? true,
+        return {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          nombre: userData.nombre || "Usuario",
+          rol: rolReal, // ← USAMOS EL ROL REAL
+          rut: userData.rut,
+          activo: userData.activo ?? true,
+        }
+      } else {
+        console.warn("⚠️ Usuario autenticado pero sin perfil en Firestore:", firebaseUser.uid)
+        
+        // Si no existe en Firestore, crear uno básico como trabajador
+        return {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          nombre: firebaseUser.email?.split("@")[0] || "Usuario",
+          rol: "trabajador", // Por defecto trabajador
+        }
       }
-    } else {
-      console.warn("⚠️ Usuario autenticado pero sin perfil en Firestore:", firebaseUser.uid)
-
-      // Usuario existe en Auth pero no en Firestore
-      // ⚠️ TAMBIÉN ADMIN POR DEFECTO PARA PRUEBAS
-      return {
-        id: firebaseUser.uid,
-        email: firebaseUser.email || "",
-        nombre: firebaseUser.email?.split("@")[0] || "Usuario",
-        rol: "admin", // ← aquí también
-      }
+    } catch (error) {
+      console.error("❌ Error al obtener perfil:", error)
+      return null
     }
-  } catch (error) {
-    console.error("Error al obtener perfil:", error)
-    return null
   }
-}
-
 
   // Listener de cambios de autenticación
   useEffect(() => {
@@ -84,7 +91,6 @@ const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<Usuario | n
       setIsLoading(true)
 
       if (firebaseUser) {
-        // Usuario autenticado
         const idToken = await firebaseUser.getIdToken()
         const userProfile = await fetchUserProfile(firebaseUser)
 
@@ -95,14 +101,15 @@ const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<Usuario | n
           console.log("✅ Usuario autenticado:", {
             email: userProfile.email,
             rol: userProfile.rol,
-            nombre: userProfile.nombre
+            nombre: userProfile.nombre,
+            isAdmin: userProfile.rol === "admin",
+            isTrabajador: userProfile.rol === "trabajador"
           })
         } else {
           console.error("❌ No se pudo cargar el perfil del usuario")
           await signOut(auth)
         }
       } else {
-        // Usuario no autenticado
         setUsuario(null)
         setToken(null)
       }
@@ -118,14 +125,12 @@ const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<Usuario | n
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const firebaseUser = userCredential.user
       
-      // Obtener perfil de Firestore
       const userProfile = await fetchUserProfile(firebaseUser)
       
       if (!userProfile) {
         throw new Error("No se encontró el perfil del usuario en la base de datos")
       }
 
-      // Verificar si está activo
       if (userProfile.activo === false) {
         await signOut(auth)
         throw new Error("Tu cuenta ha sido desactivada. Contacta al administrador.")
@@ -141,7 +146,6 @@ const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<Usuario | n
     } catch (error: any) {
       console.error("❌ Error en login:", error)
       
-      // Mensajes de error más amigables
       let errorMessage = "Error al iniciar sesión"
       
       switch (error.code) {
@@ -194,6 +198,8 @@ const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<Usuario | n
     login,
     logout,
     hasRole,
+    isAdmin: usuario?.rol === "admin",
+    isTrabajador: usuario?.rol === "trabajador",
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

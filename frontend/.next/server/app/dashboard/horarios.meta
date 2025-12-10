@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/dashboard/layout,_N_T_/dashboard/horarios/layout,_N_T_/dashboard/horarios/page,_N_T_/dashboard/horarios"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/dashboard/horarios/__PAGE__",
+    "/dashboard/horarios",
+    "/dashboard",
+    "/_index",
+    "/_head"
+  ]
+}

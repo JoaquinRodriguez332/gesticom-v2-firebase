@@ -46,10 +46,22 @@
       "namedRegex": "^/dashboard(?:/)?$"
     },
     {
+      "page": "/dashboard/horarios",
+      "regex": "^/dashboard/horarios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/horarios(?:/)?$"
+    },
+    {
       "page": "/dashboard/inventario",
       "regex": "^/dashboard/inventario(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/dashboard/inventario(?:/)?$"
+    },
+    {
+      "page": "/dashboard/reportes",
+      "regex": "^/dashboard/reportes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/reportes(?:/)?$"
     },
     {
       "page": "/dashboard/usuarios",

@@ -99,7 +99,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/Users/joaquin/gesticom_2.0/frontend",
+    "outputFileTracingRoot": "/Users/joaquin/gesticom_2.0",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -289,12 +289,12 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.mjs",
     "turbopack": {
-      "root": "/Users/joaquin/gesticom_2.0/frontend"
+      "root": "/Users/joaquin/gesticom_2.0"
     },
     "distDirRoot": ".next"
   },
   "appDir": "/Users/joaquin/gesticom_2.0/frontend",
-  "relativeAppDir": "",
+  "relativeAppDir": "frontend",
   "files": [
     ".next/routes-manifest.json",
     ".next/server/pages-manifest.json",
